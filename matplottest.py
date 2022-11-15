@@ -11,9 +11,11 @@
 import numpy as np # Scientific computing library for Python
 #for the GUI
 import matplotlib
+import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")
 import matplotlib.animation as animation
 from matplotlib import style
+from pylab import *
 style.use('ggplot')
 #format for data serial
 numIMU = 2
@@ -47,8 +49,11 @@ from tkinter import *
 
 LARGE_FONT= ("Verdana", 12)
 style.use("ggplot")
-f = Figure(figsize=(5,5), dpi=100)
-a = f.add_subplot(111)
+f = Figure(figsize=(2,5), dpi=100)
+a = f.add_subplot(221)
+b = f.add_subplot(222)
+c = f.add_subplot(223)
+#d = f.add_subplot(224)
 global xar 
 global yar
 xar = []
@@ -223,10 +228,13 @@ class PageOne(tk.Frame): #for the GUI
         #canvas.show()
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
+        thismanager = get_current_fig_manager()
+        thismanager.window.wm_geometry("+2000+200")
+        
         toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
         
 
 ##        canvas = FigureCanvasTkAgg(f, self) ##commented out for animation test, works fine for static graph
@@ -312,10 +320,10 @@ def initArd(numIMU):
         
     
 #rpyDataToAbsAngle()
-arduino = serial.Serial(port='COM10', baudrate=115200)
-arduino.close()
-arduino.open()
+##arduino = serial.Serial(port='COM10', baudrate=115200)
+##arduino.close()
+##arduino.open()
 
 app = SeaofBTCapp()
-ani = animation.FuncAnimation(f, animate, interval=1000)
+#ani = animation.FuncAnimation(f, animate, interval=1000)
 app.mainloop()
