@@ -17,7 +17,7 @@ In chronological order:
 3. Hardware: BNO055 (9-axis accel/gyro/magn/ with sensor fusion, tested with library examples as well as...
 
 	-bnotest.ino, testing printing multiple outputs of the BNO as well as interfacing multiple on the same MCU
-	-matplottest.py, CURRENT FILE, tests extracting data straight to python from arduino, processes data using quaternion and rotation matrix math, creating a GUI that plots the values from each IMU
+	-matplottest.py, CURRENT FILE, tests extracting data straight to python from arduino, processes data using quaternion and rotation matrix math, creating a GUI 		that plots the values from each IMU (dependencies: Numpy, Matplotlib, Pylab, Math, PySerial, Tkinter)
 
 4. Hardware: MPU6050, 
 	(moved back to less complex IMU for time-sensitive, proof of concept purposes)
