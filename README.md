@@ -12,7 +12,7 @@ In chronological order:
 	-twoimutest.ino, testing using two IMUs with one MCU (dependencies: MPU9250, Wire library)
 	
 	-imu_guitest.py, testing creating animation from IMU angles (.txt file inpput) in python script, UNSUCCESSFUL
-	-secondanimationtest.py, ", SUCCESSFUL (created a dynamic animation that draws two lines based on .txt file input)
+	-secondanimationtest.py, SUCCESSFUL (created a dynamic animation that draws two lines based on .txt file input)
 
 3. Hardware: BNO055 (9-axis accel/gyro/magn/ with sensor fusion, tested with library examples as well as...
 
