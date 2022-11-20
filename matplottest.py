@@ -55,14 +55,25 @@ b = f.add_subplot(222)
 c = f.add_subplot(223)
 #d = f.add_subplot(224)
 global xar 
-global yar
+global yar12
+global yar23
+global yar34
 xar = []
-yar = []
+yar12 = []
+yar23 = []
+yar34 = []
 
 def animate(i):#animate data real time
-    [xar12, yar12] = initArd(4)
+    [xar12, yar12, yar23, yar34] = initArd(4)
+    #print(yar12)
+    #print(yar23)
+    #print(yar34)
     a.clear()
-    a.plot(xar,yar)
+    a.plot(xar,yar12)
+    b.clear()
+    b.plot(xar, yar23)
+    c.clear()
+    c.plot(xar, yar34)
 
 def readQuats(decodedline):
     splitQs = decodedline.split()#imu 1, would be first 4, imu2 would be second 4, imu 3 would be third 4...
@@ -73,7 +84,13 @@ def readRPY(decodedline):
     splitRPY = [eval(i) for i in splitRPY]
     return splitRPY
 def calcAngle(quat1, quat2):
-    angle = math.degrees(2*math.acos(abs(quat1[0]*quat2[0]+quat1[1]*quat2[1]+quat1[2]*quat2[2]+quat1[3]*quat2[3])))
+    insideac = abs(quat1[0]*quat2[0]+quat1[1]*quat2[1]+quat1[2]*quat2[2]+quat1[3]*quat2[3])
+    #print(abs(quat1[0]*quat2[0]+quat1[1]*quat2[1]+quat1[2]*quat2[2]+quat1[3]*quat2[3]))
+    if(insideac > 1):
+        insideac = 1;
+    elif(insideac <-1):
+        insideac = -1
+    angle = math.degrees(2*math.acos(insideac))
     return angle
 def makeRotMat(quat):
     rotmat = [3][3]
@@ -295,35 +312,58 @@ def initArd(numIMU):
     #arduino.close()
     #arduino.open()
     #while True:
-        #time.sleep(.01)
         #data = arduino.readline().decode()
-    time = 0
+    timetot = 0
     data = arduino.readline().strip().decode("utf-8")
-    bothIMU = readRPY(data)
-    print(bothIMU)
-    if(len(bothIMU)==(numIMU*3+1)):
-        time = bothIMU[0]/1000
-        quat1 = get_quaternion_from_euler(bothIMU[1], bothIMU[2], bothIMU[3])
-        quat2 = get_quaternion_from_euler(bothIMU[4], bothIMU[5], bothIMU[6])
-        absangle12 = calcAngle(quat1, quat2)
-        print(absangle12)
+    print(data)
+    allIMU = readQuats(data)
+    print(allIMU)
+    print(len(allIMU))
+    if(len(allIMU)==(numIMU*4+1)):
+        timetot = allIMU[0]/(1000000)
+        quat1 = [allIMU[1], allIMU[2], allIMU[3], allIMU[4]]
+        quat2 = [allIMU[4], allIMU[5], allIMU[6], allIMU[7]]
+        quat3 = [allIMU[8], allIMU[9], allIMU[10], allIMU[11]]
+        quat4 = [allIMU[12], allIMU[13], allIMU[14], allIMU[15]]
+        absangle12 = calcAngle(quat1, quat2);
+        absangle23 = calcAngle(quat2, quat3);
+        absangle34 = calcAngle(quat3, quat4);
         if(len(xar)>0):
-            curtime = time+xar[len(xar)-1]
+            curtime = timetot+xar[len(xar)-1]
             xar.append(curtime)
+            #print(xar)
         else:
-            xar.append(time)
-        yar.append(absangle12)
-        return [xar, yar]
+            xar.append(timetot)
+            
+        yar12.append(absangle12)
+        yar23.append(absangle23)
+        yar34.append(absangle34)
+        
+        return [xar, yar12, yar23, yar34]
     else:
         print("not enough")
-        return [xar, -400]
+        
+        if(len(xar) > 0):
+            curtime = timetot+xar[len(xar)-1]
+            #xar.append(curtime)
+        else:
+            xar.append(timetot)
+            yar12.append(-400)
+            yar23.append(-400)
+            yar34.append(-400)
+##        print(xar)
+##        print(yar12)
+##        print(yar23)
+##        print(yar34)
+        
+        return [xar, yar12, yar23, yar34]
         
     
 #rpyDataToAbsAngle()
-##arduino = serial.Serial(port='COM10', baudrate=115200)
-##arduino.close()
-##arduino.open()
+arduino = serial.Serial(port='COM10', baudrate=115200)
+arduino.close()
+arduino.open()
 
 app = SeaofBTCapp()
-#ani = animation.FuncAnimation(f, animate, interval=1000)
+ani = animation.FuncAnimation(f, animate, interval=1000)
 app.mainloop()
