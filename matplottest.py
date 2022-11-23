@@ -36,7 +36,7 @@ yar12 = []
 yar23 = []
 yar34 = []
 
-#  Setup the gui globally???
+#  Setup the gui globally
 LARGE_FONT= ("Verdana", 12)
 style.use("ggplot")
 f = Figure(figsize=(2,5), dpi=100)
@@ -105,7 +105,7 @@ def makeRotMat(quat):
     return rotmat;
 #
 #
-#CLASS: SeaofBTCApp:: Mange the GUI and Takinter??
+#CLASS: SeaofBTCApp:: Manage the GUI and Tkinter
 #
 #
 class SeaofBTCapp(tk.Tk): #for the GUI
