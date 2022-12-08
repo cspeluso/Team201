@@ -2,16 +2,20 @@
 # License: http://creativecommons.org/licenses/by-sa/3.0/	
 
 #make sure to import: 'py -m pip install matplotlib', and
-#;py -m pip install ./downloads/SomeProject-1.0.4.tar.gz' (whatever the file path is for the .tar.gz file is) in windows+run: cmd
+#;py -m pip install ./downloads/SomeProject-1.0.4.tar.gz' (whatever the file path is for the .tar.gz file is) in windows +run: cmd
 # 'pip install scikit-kinematics'
-#also install, numpy, scipy, matplotlib, pandas, sympy, easygui
+#also install, numpy, scipy, matplotlib, pandas, sympy, easygui, csv
+
 
                     # For Arduino Serial Connection
 import numpy as np                  # Scientific computing library for Python
-import math                         # For degree calcs, etc
+import math
+import time
+# For degree calcs, etc
 import matplotlib                   # Matplot for the GUI                  
 import matplotlib.pyplot as plt                 
 import matplotlib.animation as animation
+from matplotlib.widgets import Button
 from matplotlib import style
 from pylab import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -20,61 +24,112 @@ import serial
 import tkinter as tk                # For the GUI interface
 from tkinter import ttk
 from tkinter import *
+import csv 
 
 # Additional uses here
 matplotlib.use("TkAgg")
 style.use('ggplot')
 
 ##### Some globals
-bDebugMode = True
+bDebugMode = False
+bTogArd = True
 nReadCount_Total = 0
 nReadCount_Good = 0
 nReadCount_Bad = 0
-NUM_IMUS = 4
+NUM_IMUS = 8
 xar = []
-yar12 = []
-yar23 = []
-yar34 = []
+yarShould_L = []
+yarHip_L = []
+yarKnee_L = []
+yarShould_R = []
+yarHip_R = []
+yarKnee_R = []
+#trial mumber
+trialCounter = 1
+bStored = False
+
 
 #  Setup the gui globally
 LARGE_FONT= ("Verdana", 12)
 style.use("ggplot")
+
+
 f = Figure(figsize=(2,5), dpi=100)
 a = f.add_subplot(221)
 b = f.add_subplot(222)
 c = f.add_subplot(223)
+d = f.add_subplot(224)
+    
+##axback = f.add_axes([0.7, 0.05, 0.1, 0.075])
+##bnext = Button(axback, 'Back')
+##bnext.on_clicked(plt.hide())
 
-# Init the arrays
-##bDebugMode  = True
-##NUM_IMUS    = 4
-##xar         = []
-##yar12       = []
-##yar23       = []
-##yar34       = []
-##
-###nReadCount_Total = 0
-##nReadCount_Good  = 0
-##nReadCount_Bad   = 0
-
-#
-#
 #FUNCTION: animate::  Control the real time animation to the screen
 #
 #
-def animate(i):#animate data real time
-    readArd(NUM_IMUS)
+##def animate(i):#animate data real time
+##    loopArd(NUM_IMUS)
+##    
+##    a.clear()
+##    b.clear()
+##    c.clear()
+##    a.plot(xar, yar12)
+##    b.plot(xar, yar23)
+##    c.plot(xar, yar34)
     
-    a.clear()
-    b.clear()
-    c.clear()
-    a.plot(xar, yar12)
-    b.plot(xar, yar23)
-    c.plot(xar, yar34)
+def loopArd():
+    global trialCounter
+    xar.clear()
+    yarShould_L.clear()
+    yarHip_L.clear()
+    yarKnee_L.clear()
+    yarShould_R.clear()
+    yarHip_R.clear()
+    yarKnee_R.clear()
+    initSec = time.time()
+    bStored = False
+    while(time.time() - initSec < 10): #loops arduino for 10 seconds
+        readArd(NUM_IMUS)
+    write2File()    
+    #add trial counter
+    trialCounter +=1
+    
+
+    
 #
 #
 #FUNCTION: readQuats::  Process the raw data from the serial port read procss.  Save to an array
 #
 #
+
+def write2File():
+    writeFile = open('C:\\Users\\cathe\\Documents\\testingIMU1.csv', 'w', newline='')
+    # create the csv writer
+    writer = csv.writer(writeFile)
+    # write a row to the csv file
+    writeFile.write("trial number:")
+    writeFile.write(str(trialCounter))
+    writer.writerow("")
+    writeFile.write("time, left shoulder, right shoulder, left hip, right hip, left knee, right knee")
+    writer.writerow("")
+    for i in range(len(xar)):
+##        print(i)
+##        print(len(yarKnee_L))
+##        print(len(yarHip_L))
+##        print(len(yarShould_L))
+##        print(len(yarKnee_R))
+##        print(len(yarHip_R))
+##        print(len(yarShould_R))
+##        print(len(xar))
+        thisrow = [xar[i], yarShould_L[i], yarShould_R[i], yarHip_L[i], yarHip_R[i], yarKnee_L[i], yarKnee_R[i]]
+        
+        writer.writerow(thisrow)
+    # close the file
+    writeFile.close()
+    print("file written")
+    writeFile.close()
+    bStored = True
+    
 def readQuats(decodedline):
     splitQs = decodedline.split()#imu 1, would be first 4, imu2 would be second 4, imu 3 would be third 4...
     splitQs = [eval(i) for i in splitQs]
@@ -138,13 +193,20 @@ class SeaofBTCapp(tk.Tk): #for the GUI
         frame.tkraise()
     def show():
         label.config( text = clicked.get() )
+    def fullCyc(self):
+        print("HELLO")
+        loopArd()
+        #initPlot()
+        bStored = True
+    
 
-#
+    
+        
 #
 #CLASS: StartPage:: Starting page of the GUI
 #
 #
-        
+    
 class StartPage(tk.Frame): #for the GUI
 
     def __init__(self, parent, controller):
@@ -174,19 +236,20 @@ class PageOne(tk.Frame): #for the GUI
         
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
-        label.pack(pady=10,padx=10)
+        #label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
+        #label.pack(pady=10,padx=10)
 
         button1 = ttk.Button(self, text="Back to Home",
                             command=lambda: controller.show_frame(StartPage))
-        button1.place(x = 1100, y = 30)
+        button1.place(x = 1100, y = 20)
 
-        button2 = ttk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(PageTwo))
-        button2.place(x = 1100, y = 60)
+        button2 = ttk.Button(self, text="Start Capture",
+                            command=lambda: controller.fullCyc())
+        button2.place(x = 200, y = 20)
+        button3 = ttk.Button(self, text = "Plot", command = lambda: self.showPlot())
+        button3.place(x = 300, y = 20)
+
     
-      
-        # Dropdown menu options
         options = [
             "Punch",
             "Kick",
@@ -204,16 +267,26 @@ class PageOne(tk.Frame): #for the GUI
         drop = OptionMenu( self , clicked , *options )
         drop.place(x=30, y=30)         
 
+       
+    def showPlot(self):
+        a.clear()
+        b.clear()
+        c.clear()
+        d.clear()
+        a.plot(xar, yarShould_R)
+        a.plot(xar, yarShould_L)
+        b.plot(xar, yarHip_R)
+        b.plot(xar, yarHip_L)
+        c.plot(xar, yarKnee_R)
+        d.plot(xar, yarKnee_L)
         canvas = FigureCanvasTkAgg(f, self)
         #canvas.show()
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        thismanager = get_current_fig_manager()
-        thismanager.window.wm_geometry("+2000+200")
-        
         toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)  
+        # Dropdown menu options
 
 ##        canvas = FigureCanvasTkAgg(f, self) ##commented out for animation test, works fine for static graph
 ##        canvas.draw()
@@ -305,6 +378,7 @@ def readArd(numIMU):
     #nReadCount_Total += 1
     
     data = arduino.readline().strip().decode("utf-8")
+    #print(data)
     if(bDebugMode):
         print("Raw Serial Read: ", data)
 
@@ -312,30 +386,42 @@ def readArd(numIMU):
     #if(bDebugMode)
         #print(allIMU)
         #print(len(allIMU))
-    
+
     if(len(allIMU)==(numIMU*4+1)):
 
         #Update our read count stats
         nReadCount_Good  += 1
 
         timetot = allIMU[0]/(1000000)
-        quat1 = [allIMU[1], allIMU[2], allIMU[3], allIMU[4]]
-        quat2 = [allIMU[5], allIMU[6], allIMU[7], allIMU[8]]
-        quat3 = [allIMU[9], allIMU[10], allIMU[11], allIMU[12]]
-        quat4 = [allIMU[13], allIMU[14], allIMU[15], allIMU[16]]
-        absangle12 = calcAngle(quat1, quat2);
-        absangle23 = calcAngle(quat2, quat3);
-        absangle34 = calcAngle(quat3, quat4);
+        quatarm_L = [allIMU[1], allIMU[2], allIMU[3], allIMU[4]]
+        quatarm_R = [allIMU[5], allIMU[6], allIMU[7], allIMU[8]]
+        quathip_R = [allIMU[9], allIMU[10], allIMU[11], allIMU[12]]
+        quathip_L = [allIMU[13], allIMU[14], allIMU[15], allIMU[16]]
+        quatthigh_R = [allIMU[17], allIMU[18], allIMU[19], allIMU[20]]
+        quatthigh_L = [allIMU[21], allIMU[22], allIMU[23], allIMU[24]]
+        quatshin_R =[allIMU[21], allIMU[22], allIMU[23], allIMU[24]]
+        quatshin_L = [allIMU[21], allIMU[22], allIMU[23], allIMU[24]]
+        
+        
+        aaShould_L = calcAngle(quatarm_L, quathip_L);
+        aaShould_R = calcAngle(quatarm_R, quathip_R);
+        aaHip_L = calcAngle(quatthigh_L, quathip_L);
+        aaHip_R = calcAngle(quatthigh_R, quathip_R);
+        aaKnee_L = calcAngle(quatthigh_L, quatshin_L);
+        aaKnee_R = calcAngle(quatthigh_R, quatshin_R);
+
         if(len(xar)>0):
             curtime = timetot+xar[len(xar)-1]
             xar.append(curtime)
-            #print(xar)
         else:
             xar.append(timetot)
-            
-        yar12.append(absangle12)
-        yar23.append(absangle23)
-        yar34.append(absangle34) 
+
+        yarShould_L.append(aaShould_L)
+        yarShould_R.append(aaShould_R)
+        yarHip_L.append(aaHip_L)
+        yarHip_R.append(aaHip_R)
+        yarKnee_L.append(aaKnee_L)
+        yarKnee_R.append(aaKnee_R)
         #no need to return if these are globals. Look into using pass by reference
         #return [xar, yar12, yar23, yar34] 
     else:
@@ -351,12 +437,12 @@ def readArd(numIMU):
             #xar.append(curtime)
         else:
             xar.append(timetot)
-            yar12.append(-400)
-            yar23.append(-400)
-            yar34.append(-400)
+            yarShould_R.append(-400)
+            yarHip_R.append(-400)
+            yarKnee_R.append(-400)
         
         # return [xar, yar12, yar23, yar34] #Return of these values not needed since globally defined
-    if(nReadCount_Total % 10 ==0):
+    if(nReadCount_Total % 10 ==0 and bDebugMode):
         print("Total Reads: ", nReadCount_Total)
         print(" Good Reads: ", nReadCount_Good)
         print("  Bad Reads: ", nReadCount_Bad)
@@ -365,10 +451,14 @@ def readArd(numIMU):
 # Start of main loop
 #              
 #Open the serial port..Close, then reopen to avoid any init errros (Python issue??)
-arduino = serial.Serial(port='COM10', baudrate=115200)
-arduino.close()
-arduino.open()
-print("Serial Port successfully opened...")
-app = SeaofBTCapp()     #Init/Start BTC APp
-ani = animation.FuncAnimation(f, animate, interval=50)  #Loop 10x a second
+if(bTogArd):
+    arduino = serial.Serial(port='COM10', baudrate=115200)
+    arduino.close()
+    arduino.open()
+    print("Serial Port successfully opened...")
+else:
+    print("Toggle Arduino: Off")
+app = SeaofBTCapp()     #Init/Start BTC App
+##if(bTogArd):
+##    ani = animation.FuncAnimation(f, animate, interval=10)  #Loop 10x a second
 app.mainloop()
