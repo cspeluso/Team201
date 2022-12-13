@@ -31,7 +31,7 @@ matplotlib.use("TkAgg")
 style.use('ggplot')
 
 ##### Some globals
-bDebugMode = False
+bDebugMode = True
 bTogArd = True
 nReadCount_Total = 0
 nReadCount_Good = 0
@@ -39,13 +39,21 @@ nReadCount_Bad = 0
 NUM_IMUS = 8
 xar = []
 yarShould_L = []
+yarShould_L_2 = []
 yarHip_L = []
+yarHip_L_2 = []
 yarKnee_L = []
+yarKnee_L_2 = []
 yarShould_R = []
+yarShould_R_2 = []
 yarHip_R = []
+yarHip_R_2 = []
 yarKnee_R = []
+yarKnee_R_2 = []
+instruct = False
 #trial mumber
 trialCounter = 1
+loopCount = 0
 bStored = False
 
 
@@ -59,6 +67,7 @@ a = f.add_subplot(221)
 b = f.add_subplot(222)
 c = f.add_subplot(223)
 d = f.add_subplot(224)
+
     
 ##axback = f.add_axes([0.7, 0.05, 0.1, 0.075])
 ##bnext = Button(axback, 'Back')
@@ -79,17 +88,28 @@ d = f.add_subplot(224)
     
 def loopArd():
     global trialCounter
+    global loopCount
     xar.clear()
-    yarShould_L.clear()
-    yarHip_L.clear()
-    yarKnee_L.clear()
-    yarShould_R.clear()
-    yarHip_R.clear()
-    yarKnee_R.clear()
+    if instruct:
+        yarShould_L_2.clear()
+        yarHip_L_2.clear()
+        yarKnee_L_2.clear()
+        yarShould_R_2.clear()
+        yarHip_R_2.clear()
+        yarKnee_R_2.clear()
+    else:
+        yarShould_L.clear()
+        yarHip_L.clear()
+        yarKnee_L.clear()
+        yarShould_R.clear()
+        yarHip_R.clear()
+        yarKnee_R.clear()
+        
     initSec = time.time()
     bStored = False
     while(time.time() - initSec < 10): #loops arduino for 10 seconds
         readArd(NUM_IMUS)
+    print(loopCount)
     write2File()    
     #add trial counter
     trialCounter +=1
@@ -103,7 +123,8 @@ def loopArd():
 #
 
 def write2File():
-    writeFile = open('C:\\Users\\cathe\\Documents\\testingIMU1.csv', 'w', newline='')
+    global instruct
+    writeFile = open('C:\\Users\\cathe\\Documents\\vvtrial_3_1213.csv', 'w', newline='')
     # create the csv writer
     writer = csv.writer(writeFile)
     # write a row to the csv file
@@ -121,8 +142,10 @@ def write2File():
 ##        print(len(yarHip_R))
 ##        print(len(yarShould_R))
 ##        print(len(xar))
-        thisrow = [xar[i], yarShould_L[i], yarShould_R[i], yarHip_L[i], yarHip_R[i], yarKnee_L[i], yarKnee_R[i]]
-        
+        if instruct:
+            thisrow = [xar[i], yarShould_L_2[i], yarShould_R_2[i], yarHip_L_2[i], yarHip_R_2[i], yarKnee_L_2[i], yarKnee_R_2[i]]
+        else:
+            thisrow = [xar[i], yarShould_L[i], yarShould_R[i], yarHip_L[i], yarHip_R[i], yarKnee_L[i], yarKnee_R[i]]
         writer.writerow(thisrow)
     # close the file
     writeFile.close()
@@ -140,7 +163,7 @@ def readQuats(decodedline):
 #
 #
 def calcAngle(quat1, quat2):
-    insideAC = abs(quat1[0]*quat2[0]+quat1[1]*quat2[1]+quat1[2]*quat2[2]+quat1[3]*quat2[3])
+    insideAC = abs(quat1[0]*quat2[0]+quat1[1]*-quat2[1]+quat1[2]*-quat2[2]+quat1[3]*-quat2[3])
     #If insideAC is > 1, round back down to 1
     if(insideAC > 1):
         insideAC = 1
@@ -194,10 +217,14 @@ class SeaofBTCapp(tk.Tk): #for the GUI
     def show():
         label.config( text = clicked.get() )
     def fullCyc(self):
+        global loopCount
         print("HELLO")
-        loopArd()
-        #initPlot()
-        bStored = True
+        loopCount = 0
+        if bTogArd:
+            loopArd()
+            #initPlot()
+            bStored = True
+            
     
 
     
@@ -211,20 +238,20 @@ class StartPage(tk.Frame): #for the GUI
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self,parent)
-        label = tk.Label(self, text="Start Page", font=LARGE_FONT)
+        label = tk.Label(self, text="Welcome to Motion Capture", font=LARGE_FONT)
         label.pack(pady=10,padx=10)
 
-        button = ttk.Button(self, text="Visit Page 1",
+        button = ttk.Button(self, text="Start Session",
                             command=lambda: controller.show_frame(PageOne))
         button.pack()
 
-        button2 = ttk.Button(self, text="Visit Page 2",
-                            command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
-
-        button3 = ttk.Button(self, text="Graph Page",
-                            command=lambda: controller.show_frame(PageThree))
-        button3.pack()
+##        button2 = ttk.Button(self, text="Visit Page 2",
+##                            command=lambda: controller.show_frame(PageTwo))
+##        button2.pack()
+##
+##        button3 = ttk.Button(self, text="Graph Page",
+##                            command=lambda: controller.show_frame(PageThree))
+##        button3.pack()
 
 #
 #
@@ -245,11 +272,20 @@ class PageOne(tk.Frame): #for the GUI
 
         button2 = ttk.Button(self, text="Start Capture",
                             command=lambda: controller.fullCyc())
-        button2.place(x = 200, y = 20)
-        button3 = ttk.Button(self, text = "Plot", command = lambda: self.showPlot())
-        button3.place(x = 300, y = 20)
+        button2.place(x = 500, y = 20)
 
-    
+        button4 = ttk.Button(self, text = "Student Trial", command = lambda: self.instructfal())
+        button4.place(x = 300, y = 20)
+        
+        button4 = ttk.Button(self, text = "Instructor Trial", command = lambda: self.instructtru())
+        button4.place(x = 400, y = 20)
+        
+        button3 = ttk.Button(self, text = "Plot", command = lambda: self.showPlot())
+        button3.place(x = 600, y = 20)
+
+        label = tk.Label(self, text="*Plot after both student and instructor trials are taken*", font=LARGE_FONT)
+        label.pack(pady=70,padx=40)
+        
         options = [
             "Punch",
             "Kick",
@@ -273,20 +309,51 @@ class PageOne(tk.Frame): #for the GUI
         b.clear()
         c.clear()
         d.clear()
+        if len(yarShould_R) > len(yarShould_R_2):
+            for i in range(len(yarShould_R) - len(yarShould_R_2)):
+                yarShould_R_2.append(0)
+                yarHip_R_2.append(0)
+                yarKnee_R_2.append(0)
+                yarShould_L_2.append(0)
+                yarHip_L_2.append(0)
+                yarKnee_L_2.append(0)
+        if len(yarShould_R) < len(yarShould_R_2):
+            for i in range(len(yarShould_R_2) - len(yarShould_R)):
+                yarShould_R.append(0)
+                yarHip_R.append(0)
+                yarKnee_R.append(0)
+                yarShould_L.append(0)
+                yarHip_L.append(0)
+                yarKnee_L.append(0)
+        print(len(yarShould_R))
+        print(len(yarShould_R_2))
         a.plot(xar, yarShould_R)
-        a.plot(xar, yarShould_L)
+        a.plot(xar, yarShould_R_2)
         b.plot(xar, yarHip_R)
-        b.plot(xar, yarHip_L)
-        c.plot(xar, yarKnee_R)
-        d.plot(xar, yarKnee_L)
+        b.plot(xar, yarHip_R_2)
+        c.plot(xar, yarShould_L)
+        c.plot(xar, yarShould_L_2)
+        d.plot(xar, yarKnee_R)
+        d.plot(xar, yarKnee_R_2)
+        a.title.set_text('right should')
+        b.title.set_text('right hip')
+        c.title.set_text('left shoulder')
+        d.title.set_text('right knee')
         canvas = FigureCanvasTkAgg(f, self)
         #canvas.show()
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
-        canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)  
+        canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)  
         # Dropdown menu options
+
+    def instructtru(self):
+        global instruct
+        instruct = True
+    def instructfal(self):
+        global instruct
+        instruct = False
 
 ##        canvas = FigureCanvasTkAgg(f, self) ##commented out for animation test, works fine for static graph
 ##        canvas.draw()
@@ -356,6 +423,7 @@ class placedIMU:
 #
 #
 def readArd(numIMU):
+    global loopCount
     global nReadCount_Good
     global nReadCount_Bad
     global nReadCount_Total
@@ -393,10 +461,10 @@ def readArd(numIMU):
         nReadCount_Good  += 1
 
         timetot = allIMU[0]/(1000000)
-        quatarm_L = [allIMU[1], allIMU[2], allIMU[3], allIMU[4]]
-        quatarm_R = [allIMU[5], allIMU[6], allIMU[7], allIMU[8]]
-        quathip_R = [allIMU[9], allIMU[10], allIMU[11], allIMU[12]]
-        quathip_L = [allIMU[13], allIMU[14], allIMU[15], allIMU[16]]
+        quatarm_R = [allIMU[1], allIMU[2], allIMU[3], allIMU[4]] #0
+        quatarm_L = [allIMU[5], allIMU[6], allIMU[7], allIMU[8]] #1
+        quathip_R = [allIMU[9], allIMU[10], allIMU[11], allIMU[12]] #2
+        quathip_L = [allIMU[13], allIMU[14], allIMU[15], allIMU[16]] #3
         quatthigh_R = [allIMU[17], allIMU[18], allIMU[19], allIMU[20]]
         quatthigh_L = [allIMU[21], allIMU[22], allIMU[23], allIMU[24]]
         quatshin_R =[allIMU[21], allIMU[22], allIMU[23], allIMU[24]]
@@ -415,13 +483,21 @@ def readArd(numIMU):
             xar.append(curtime)
         else:
             xar.append(timetot)
-
-        yarShould_L.append(aaShould_L)
-        yarShould_R.append(aaShould_R)
-        yarHip_L.append(aaHip_L)
-        yarHip_R.append(aaHip_R)
-        yarKnee_L.append(aaKnee_L)
-        yarKnee_R.append(aaKnee_R)
+        if instruct:
+            yarShould_L_2.append(aaShould_L)
+            yarShould_R_2.append(aaShould_R)
+            yarHip_L_2.append(aaHip_L)
+            yarHip_R_2.append(aaHip_R)
+            yarKnee_L_2.append(aaKnee_L)
+            yarKnee_R_2.append(aaKnee_R)
+        else:
+            yarShould_L.append(aaShould_L)
+            yarShould_R.append(aaShould_R)
+            yarHip_L.append(aaHip_L)
+            yarHip_R.append(aaHip_R)
+            yarKnee_L.append(aaKnee_L)
+            yarKnee_R.append(aaKnee_R)
+        loopCount+=1
         #no need to return if these are globals. Look into using pass by reference
         #return [xar, yar12, yar23, yar34] 
     else:
@@ -452,7 +528,7 @@ def readArd(numIMU):
 #              
 #Open the serial port..Close, then reopen to avoid any init errros (Python issue??)
 if(bTogArd):
-    arduino = serial.Serial(port='COM10', baudrate=115200)
+    arduino = serial.Serial(port='COM17', baudrate=115200)
     arduino.close()
     arduino.open()
     print("Serial Port successfully opened...")
